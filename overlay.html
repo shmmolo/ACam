@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Centered ESP32 Overlay</title>
+  <style>
+    /* Full-page container centering its contents */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;  /* or whatever page bg you like */
+    }
+
+    /* The video+overlay wrapper */
+    #viewer {
+      position: relative;
+      width: 80vw;
+      height: 80vh;
+      max-width: 1000px;  /* optional cap */
+      max-height: 800px;  /* optional cap */
+    }
+
+    /* Hidden MJPEG source (we draw it on canvas) */
+    #cam {
+      display: none;
+    }
+
+    /* Canvas fills the wrapper */
+    #overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* pointer-events:none to let clicks through if needed */
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="viewer">
+    <!-- Hidden MJPEG stream -->
+    <img id="cam" src="http://esp32cam.local" alt="ESP32-CAM stream">
+
+    <!-- Canvas to draw grayscale video + overlay -->
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <script>
+    const camImg    = document.getElementById('cam');
+    const canvas    = document.getElementById('overlay');
+    const ctx       = canvas.getContext('2d');
+    let overlayImg; // will hold your overlay PNG
+
+    // Size canvas once first frame arrives
+    camImg.onload = () => {
+      canvas.width  = camImg.naturalWidth;
+      canvas.height = camImg.naturalHeight;
+    };
+
+    // Draw loop: grayscale video, then color overlay
+    function draw() {
+      if (canvas.width && canvas.height) {
+        // 1) draw cam in grayscale
+        ctx.filter = 'grayscale(100%)';
+        ctx.drawImage(camImg, 0, 0, canvas.width, canvas.height);
+        // 2) draw overlay
+        ctx.filter = 'none';
+        if (overlayImg) {
+          ctx.drawImage(overlayImg, 0, 0, canvas.width, canvas.height);
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // When your Flask overlay server is ready, uncomment & adjust:
+    
+    setInterval(() => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload  = () => { overlayImg = img; };
+      img.onerror = () => { /* ignore until available */ };
+      img.src = 'http://192.168.0.107:5000/overlay.png?ts=' + Date.now();
+    }, 100);
+    
+  </script>
+
+</body>
+</html>
