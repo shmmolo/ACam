@@ -39,5 +39,7 @@ def update(i):
     return [im]
 
 # Animating: draws in fig, calls update for each frame, number of frames, playback speed, smooth graphing
-ani = FuncAnimation(fig, update, frames=range(30), interval=200, blit=True, repeat=False)
+frames = 30
+interval = 200
+ani = FuncAnimation(fig, update, frames=range(frames), interval=interval, blit=True, repeat=False)
 plt.show()
